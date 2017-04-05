@@ -1,112 +1,79 @@
+var gulp = require('gulp');
+var csso = require('gulp-csso');
+var uglify = require('gulp-uglify');
+var concat = require('gulp-concat');
+var sass = require('gulp-sass');
+var plumber = require('gulp-plumber');
+var cp = require('child_process');
+var imagemin = require('gulp-imagemin');
+var browserSync = require('browser-sync');
+
+var jekyllCommand = (/^win/.test(process.platform)) ? 'jekyll.bat' : 'jekyll';
+
 /*
-  Jekyll serve will only be used for generating _site folder
-  Watching stuffs will be done via browserSync
+ * Build the Jekyll Site
+ * runs a child process in node that runs the jekyll commands
+ */
+gulp.task('jekyll-build', function (done) {
+	return cp.spawn(jekyllCommand, ['build'], {stdio: 'inherit'})
+		.on('close', done);
+});
+
+/*
+ * Rebuild Jekyll & reload browserSync
+ */
+gulp.task('jekyll-rebuild', ['jekyll-build'], function () {
+	browserSync.reload();
+});
+
+/*
+ * Build the jekyll site and launch browser-sync
+ */
+gulp.task('browser-sync', ['jekyll-build'], function() {
+	browserSync({
+		server: {
+			baseDir: '_site'
+		}
+	});
+});
+
+/*
+* Compile and minify sass
 */
-var gulp = require('gulp'),
-  browserSync = require('browser-sync').create()
-  bundleFiles = require('gulp-bundle-files'),
-  bundleOptions = require('./_data/options.json'),
-  uglify = require('gulp-uglify'),
-  rename = require('gulp-rename'),
-  cleanCSS = require('gulp-clean-css'),
-  concat = require('gulp-concat'),
-  jsonSass = require('gulp-json-sass'),
-  sassGlob = require('gulp-sass-glob'),
-  sass = require('gulp-sass'),
-  sourcemaps = require('gulp-sourcemaps'),
-  plumber = require('gulp-plumber')
-  cp = require('child_process'),
-  jekyllCommand = (/^win/.test(process.platform)) ? 'jekyll.bat' : 'jekyll';
-
-//Bundling js / css
-gulp.task('bundle', function(){
-  bundleFiles(bundleOptions);
-});
-
-//Minifying js
-gulp.task('minify-js', function(){
-  return gulp.src('./public/js/client.js')
-  .pipe(uglify())
-  .pipe(rename({ suffix: '.min'}))
-  .pipe(gulp.dest('./public/js'))
-  .pipe(browserSync.reload({
-    stream: true
-  }));
-});
-
-gulp.task('jsonSass', function(){
-  return gulp.src('_data/variables.json')
-  .pipe(jsonSass({
-    sass: false
-  }))
-  .pipe(concat('variables.scss'))
-  .pipe(gulp.dest('./_sass/_configurations/'));
-});
-
-//Compile sass files into css file!
-gulp.task('sass', function(){
-  return gulp.src('_sass/style.scss')
-  .pipe(plumber())
-  .pipe(sassGlob())
-  .pipe(sourcemaps.init())
+gulp.task('sass', function() {
+  gulp.src('src/styles/**/*.scss')
+    .pipe(plumber())
     .pipe(sass())
-      .on('error', function(error){
-        console.log(error);
-        this.emit('end');
-      })
-      .pipe(plumber())
-  .pipe(sourcemaps.write())
-  .pipe(gulp.dest('./assets/css'));
+    .pipe(csso())
+    .pipe(gulp.dest('assets/css'));
 });
 
-//Minifying css task
-gulp.task('minify-css', ['sass'], function(){
-  return gulp.src('./public/css/style.css')
-    .pipe(cleanCSS({
-      compatibility: 'ie8'
-    }))
-    .pipe(rename({
-      suffix: '.min'
-    }))
-    .pipe(gulp.dest('./public/css'))
-    .pipe(browserSync.reload({
-      stream: true
-    }));
+/*
+ * Minify images
+ */
+gulp.task('imagemin', function() {
+	return gulp.src('src/img/**/*.{jpg,png,gif}')
+		.pipe(plumber())
+		.pipe(imagemin({ optimizationLevel: 3, progressive: true, interlaced: true }))
+		.pipe(gulp.dest('assets/img/'));
 });
 
-//BrowserSync task
-gulp.task('browserSync', ['jekyll-build'], function(){
-    browserSync.init({
-        server: {
-          baseDir: '_site'
-        }
-    });
+/**
+ * Compile and minify js
+ */
+gulp.task('js', function(){
+	return gulp.src('src/js/**/*.js')
+		.pipe(plumber())
+		.pipe(concat('main.js'))
+		.pipe(uglify())
+		.pipe(gulp.dest('assets/js/'))
 });
 
-//Build Jekyll site
-gulp.task('jekyll-build', function(done){
-
-  browserSync.notify('Running $jekyll build...');
-  return cp.spawn(jekyllCommand, ['build'], {stdio: 'inherit'})
-          .on('close', done);
-
+gulp.task('watch', function() {
+  gulp.watch('src/styles/**/*.scss', ['sass']);
+  gulp.watch('src/js/**/*.js', ['js']);
+	gulp.watch('src/img/**/*.{jpg,png,gif}', ['imagemin']);
+  gulp.watch(['*html', '_includes/*html', '_layouts/*.html'], ['jekyll-rebuild']);
 });
 
-//Rebuilding Jekyll site
-gulp.task('jekyll-rebuild', ['jekyll-build'], function(){
-  browserSync.reload();
-});
-
-
-gulp.task('watch', function(){
-  gulp.watch('_data/variables.json', ['jsonSass', 'sass']);
-  gulp.watch(['_sass/**/*.scss','public/css/*.css'], ['minify-css']);
-  gulp.watch('assets/js/*.js', ['bundle']);
-  gulp.watch('public/js/client.js', ['minify-js']);
-  gulp.watch(['_config.yml','*.html', '*.md', '_includes/*.html', '_layouts/*.html', '_posts/*', '_plugins/*', '_data/*'], ['jekyll-rebuild']);
-  gulp.watch(['public/js/*.js', 'public/css/*.css'], ['jekyll-rebuild']);
-});
-
-
-//Run GULP!
-gulp.task('default', ['jsonSass', 'sass', 'bundle', 'minify-js', 'minify-css', 'browserSync', 'watch']);
+gulp.task('default', ['js', 'sass', 'browser-sync', 'watch']);
