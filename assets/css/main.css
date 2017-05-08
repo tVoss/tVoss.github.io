@@ -359,3 +359,6 @@ body {
 
 .highlight { background-color: #f8f8f8; }
 
+img[src$="centerimg"] {
+  margin: 0 auto
+}
