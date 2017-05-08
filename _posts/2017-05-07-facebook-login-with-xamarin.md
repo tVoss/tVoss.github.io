@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Xamarin with Facebook Login"
+title: "Facebook Login with Xamarin"
 categories: app-dev wavelength
 ---
 
