@@ -362,3 +362,7 @@ body {
 img[src$="centerimg"] {
   margin: 0 auto
 }
+
+.container table {
+    margin: auto
+}
