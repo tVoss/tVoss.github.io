@@ -1,15 +1,16 @@
 ---
 layout: post
-title: "Xamarin with Facebook Login"
+title: "Facebook Login with Xamarin"
 categories: app-dev wavelength
 ---
 
-When creating a new mobile application many things need to be taken into consideration including what technologies to use, main features, target audience, monetization, scalability, the list goes on. However before digging into any of that, ever app needs two core features in order to reach a large audience:
+When creating a new mobile application many things need to be taken into consideration including what technologies to use, main features, target audience, monetization, scalability, the list goes on. However before digging into any of that, every app needs two core features in order to reach a large audience:
 
 * The ability to run on both iOS and Android
 * An easy way for users to login and integrate with friends
 
 Luckily, there are two libraries out there that give us those features for free. **Xamarin** takes care of cross platform capability, with the option to even target Windows phone (although who has one of those?). **Facebook** on the other hand allows users to log in and connect with friends who have also logged in with Facebook. That's a lot of functionality for free, however getting the two to cooperate isn't as straight forward as it would seem, mainly thanks to some broken versioning and disconnect between the C# used to program with Xamarin, and the Java that Facebook expects.
+
 ### Prereqs
 * **A PC running Windows:** Although not my first choice of OS, all the work will be done in Visual Studio, so Windows is a must.
 * **A Facebook Developer Account:** This is free and easy to set up [here](https://developers.facebook.com/).
@@ -46,7 +47,7 @@ For big applications, shared projects require special care or the code can becom
 </p>
 
 ### Installing Packages
-Now this is where things got difficult for me personally, and it all stems from bad versioning. The *current* version of Xamarin.Facebook.Android we want to use is 4.4.0.2, but what appears to be the current version is 4.22.0, which is not compatible with our platform. This all stems from a change in the number of versioning numbers. NuGet doesn't understand this and assumes 4.22.x > 4.4.x.x, even though that is not the case. Fortunatly this can be solved in one command in the package manager console.
+Now this is where things got difficult for me personally, and it all stems from bad versioning. The *current* version of Xamarin.Facebook.Android we want to use is 4.4.0.2, but what appears to be the current version is 4.22.0, which is not compatible with our platform. This all stems from a change in the number of versioning numbers. NuGet doesn't understand this and assumes 4.22.x > 4.4.x.x, even though that is not the case. Fortunatly this can be solved with one command in the package manager console.
 
 ```
 Install-Package Xamarin.Facebook
@@ -55,7 +56,7 @@ Install-Package Xamarin.Facebook
 This package is versioned correctly, and will get the right version of all its dependencies. While NuGet may complain that some packages are outdated, this should be ignored.
 
 ### Setting up Facebook
-Everything we need is finally installed. Last thing to do before getting a login button on screen is configure out Facebook SDK. The [Quick Start for Android](https://developers.facebook.com/quickstarts/?platform=android) will walk you though this whole process.
+Everything we need is finally installed. Last thing to do before getting a login button on screen is configure our Facebook SDK. The [Quick Start for Android](https://developers.facebook.com/quickstarts/?platform=android) will walk you though this whole process.
 
 After that, go to your app settings and ensure **Single Sign On** is turned on.
 
@@ -77,7 +78,7 @@ Now that everything is in place, we can actually add a log in button. Open **Res
 </LinearLayout>
 ```
 
-This puts the Facebook provided `LoginButton` front and center in out main activity.
+This puts the Facebook provided `LoginButton` front and center in our main activity.
 
 Next we need to make sure the button knows what to do once it's pressed. We do this by adding the following in between the `application` tags in **AndroidManifest.xml**:
 
@@ -168,7 +169,7 @@ namespace App
 
 There are a couple of things to take notice here. First off is the `ICallbackManager`, which must be a member variable to be initialized in `OnCreate`. It allows for the result of the Facebook Activity to be processed properly in `OnActivityResult`.
 
-Secondly, `FacebookSdk.SdkInitialize` *must* be called before `SetContentView`, otherwise the login button won't have any idea what to do.
+Secondly, `FacebookSdk.SdkInitialize` *must* be called before `SetContentView`, otherwise the login button will be created without any idea what to do.
 
 Lastly, `IFacebookCallback` can be implemented in any class. For simplicity the activity implemented it which is okay for this case. Since we know the only request being sent is a login one, in the `OnSuccess` method we can safely cast the result to the type of `LoginResult`.
 
